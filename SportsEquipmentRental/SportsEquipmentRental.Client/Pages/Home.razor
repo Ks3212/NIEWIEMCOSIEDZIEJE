@@ -1,0 +1,107 @@
+﻿@page "/"
+@using SportsEquipmentRental.Shared.Models
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Home</PageTitle>
+
+<div class="container-fluid hero text-center text-white py-5" style="background-image: url('https://www.e-wczasy.pl/blog/wp-content/uploads/2018/10/Co-warto-zobaczy%C4%87-w-g%C3%B3rach-e1570028123678.jpeg'); background-size: cover; background-position: center;">
+    <div class="container">
+        <h1 class="display-4">Wypożyczaj i uprawiaj sport</h1>
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control" placeholder="Wyszukaj kategorię..." @bind="searchQuery" />
+                    <button class="btn btn-primary" @onclick="SearchCategory">
+                        <i class="bi bi-search"></i> Szukaj
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    @if (categories == null)
+    {
+        <p>Ładowanie...</p>
+    }
+    else if (!categories.Any())
+    {
+        <p>Brak dostępnych kategorii.</p>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 g-4">
+            @if (filteredCategories != null && filteredCategories.Any())
+            {
+                @foreach (var category in filteredCategories)
+                {
+                    <div class="col">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">@category.Name</h5>
+                                <a href="/equipment/@category.CategoryId" class="btn btn-primary mt-3">
+                                    Zobacz sprzęt
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="col-12 text-center">
+                    <p class="text-muted">Brak dostępnych kategorii.</p>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+
+@code {
+    private List<Category>? categories;
+    private List<Category>? filteredCategories;
+    private string searchQuery = string.Empty;
+
+    [Inject]
+    private HttpClient Http { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/Category");
+            if (response.IsSuccessStatusCode)
+            {
+                categories = await response.Content.ReadFromJsonAsync<List<Category>>();
+                filteredCategories = categories;
+            }
+            else
+            {
+                Console.WriteLine($"Błąd: {response.StatusCode}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Wystąpił wyjątek: {ex.Message}");
+        }
+    }
+
+    private void SearchCategory()
+    {
+        if (string.IsNullOrWhiteSpace(searchQuery))
+        {
+            filteredCategories = categories;
+        }
+        else
+        {
+            filteredCategories = categories?.Where(c => c.Name.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+    }
+}

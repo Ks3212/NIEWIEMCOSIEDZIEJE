@@ -1,0 +1,60 @@
+﻿@page "/TEST"
+@rendermode InteractiveWebAssembly
+@inject HttpClient Http
+@using SportsEquipmentRental.Shared.Models
+
+<h3>Categories</h3>
+
+<div>
+    <h4>Add New Category</h4>
+    <EditForm Model="@NewCategory" OnValidSubmit="AddCategory">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div>
+            <label for="name">Category Name:</label>
+            <InputText id="name" @bind-Value="NewCategory.Name" />
+        </div>
+        <button type="submit">Add</button>
+    </EditForm>
+</div>
+
+<div>
+    <h4>Existing Categories</h4>
+    <ul>
+        @if (Categoriees == null)
+        {
+            <li>Loading...</li>
+        }
+        else
+        {
+            @foreach (var category in Categoriees)
+            {
+                <li>@category.Name</li>
+            }
+        }
+    </ul>
+</div>
+
+@code {
+    private List<Category> Categoriees;
+    private Category NewCategory = new Category();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Console.WriteLine($"HttpClient BaseAddress: {Http.BaseAddress}");
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        Categoriees = await Http.GetFromJsonAsync<List<Category>>("api/Category");
+    }
+
+    private async Task AddCategory()
+    {
+        await Http.PostAsJsonAsync("api/Category", NewCategory);
+        NewCategory = new Category(); // Reset form
+        await LoadCategories(); // Refresh list
+    }
+}
